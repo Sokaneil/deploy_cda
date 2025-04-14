@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: C:\Users\dylan\89-Progress
+    container_name: 89progress-backend
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USERNAME=root
+      - DB_PASSWORD=rootpassword
+      - DB_NAME=school_app
+      - JWT_SECRET=your_very_secure_secret_key_here
+      - JWT_ACCESS_EXPIRATION=15m
+      - JWT_REFRESH_EXPIRATION=7d
+      - ALLOWED_ORIGIN=*
+    networks:
+      - app-network
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    container_name: 89progress-mysql
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=school_app
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # Ajouter un script d'initialisation si nécessaire
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: C:\Users\dylan\Front_Projet_Finale
+    container_name: 89progress-frontend
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost/api
+    networks:
+      - app-network
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: 89progress-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - app-network
+    depends_on:
+      - backend
+      - frontend
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  caddy-data:
+  caddy-config:

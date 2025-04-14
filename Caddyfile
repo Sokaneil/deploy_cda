@@ -1,0 +1,13 @@
+# Caddyfile
+:80 {
+    # API requests
+    handle_path /api/* {
+        uri strip_prefix /api
+        reverse_proxy backend:3000
+    }
+
+    # Frontend (Next.js)
+    handle {
+        reverse_proxy frontend:3000
+    }
+}
