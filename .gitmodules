@@ -1,0 +1,6 @@
+[submodule "Back_cda"]
+	path = Back_cda
+	url = https://github.com/Negiiies/Back_cda.git
+[submodule "front_cda"]
+	path = front_cda
+	url = https://github.com/Negiiies/front_cda.git

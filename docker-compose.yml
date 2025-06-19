@@ -1,79 +1,81 @@
-version: '3.8'
-
 services:
-  backend:
-    build:
-      context: C:\Users\dylan\89-Progress
-    container_name: 89progress-backend
-    restart: always
-    environment:
-      - NODE_ENV=production
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USERNAME=root
-      - DB_PASSWORD=rootpassword
-      - DB_NAME=school_app
-      - JWT_SECRET=your_very_secure_secret_key_here
-      - JWT_ACCESS_EXPIRATION=15m
-      - JWT_REFRESH_EXPIRATION=7d
-      - ALLOWED_ORIGIN=*
-    networks:
-      - app-network
-    depends_on:
-      - mysql
-
-  mysql:
+  db:
     image: mysql:8.0
-    container_name: 89progress-mysql
-    restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=rootpassword
-      - MYSQL_DATABASE=school_app
+      MYSQL_ROOT_PASSWORD: rootpass123
+      MYSQL_DATABASE: school_app
+      MYSQL_USER: admin_user
+      MYSQL_PASSWORD: your_password
     volumes:
-      - mysql-data:/var/lib/mysql
-      # Ajouter un script d'initialisation si nécessaire
-      - ./mysql-init:/docker-entrypoint-initdb.d
+      - mysql_data:/var/lib/mysql
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "admin_user", "-pyour_password"]
+      timeout: 20s
+      retries: 10
       interval: 10s
-      timeout: 5s
-      retries: 5
+      start_period: 40s
 
-  frontend:
-    build:
-      context: C:\Users\dylan\Front_Projet_Finale
-    container_name: 89progress-frontend
-    restart: always
+  backend:
+    build: ./Back_cda
     environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://localhost/api
+      NODE_ENV: development
+      PORT: 3000
+      DB_TYPE: mysql
+      DB_STORAGE: ./database.sqlite
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USERNAME: admin_user
+      DB_PASSWORD: your_password
+      DB_NAME: school_app
+      ARGON2_MEMORY_COST: 65536
+      ARGON2_TIME_COST: 3
+      ARGON2_PARALLELISM: 1
+      JWT_SECRET: your_very_secure_secret_key_here
+      JWT_ACCESS_EXPIRATION: 15m
+      JWT_REFRESH_EXPIRATION: 7d
+      ALLOWED_ORIGIN: "*"
     networks:
       - app-network
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
-  caddy:
-    image: caddy:2-alpine
-    container_name: 89progress-caddy
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy-data:/data
-      - caddy-config:/config
+  frontend:
+    build: ./front_cda
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      NEXT_PUBLIC_API_URL: http://localhost/api  # ← This should work
     networks:
       - app-network
     depends_on:
       - backend
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.7-alpine
+    ports:
+      - "80:80"      # ← External access port
+      - "443:443"    # ← HTTPS (if you get a domain later)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - app-network
+    depends_on:
       - frontend
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  caddy_data:
+  caddy_config:
 
 networks:
   app-network:
     driver: bridge
-
-volumes:
-  mysql-data:
-  caddy-data:
-  caddy-config:

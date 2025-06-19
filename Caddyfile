@@ -1,13 +1,19 @@
-# Caddyfile
+# For local/IP access without domain
 :80 {
-    # API requests
-    handle_path /api/* {
-        uri strip_prefix /api
+    # Handle API requests - proxy to backend
+    handle /api/* {
         reverse_proxy backend:3000
     }
-
-    # Frontend (Next.js)
+    
+    # Handle everything else - proxy to frontend
     handle {
-        reverse_proxy frontend:3000
+        reverse_proxy frontend:3001
+    }
+    
+    # Add some security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        X-XSS-Protection "1; mode=block"
     }
 }
