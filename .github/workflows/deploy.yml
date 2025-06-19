@@ -1,12 +1,14 @@
-name: Deploy to Production
+name: Deploy to Production Server
 
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:  # Allow manual triggers
 
 jobs:
   deploy:
-    runs-on: ubuntu-20.04
+    name: Deploy to DigitalOcean
+    runs-on: ubuntu-latest
     
     steps:
     - name: Deploy to server
@@ -15,10 +17,26 @@ jobs:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.DEPLOY_KEY }}
+        port: 22
         script: |
+          echo "🚀 Starting deployment..."
           cd /opt/2024_grad_deploy
+          
+          echo "📥 Pulling latest code..."
           git pull origin main
+          
+          echo "🔄 Updating submodules..."
           git submodule update --remote
+          
+          echo "🐳 Rebuilding containers..."
           docker-compose down
           docker-compose up -d --build
-          echo "🚀 Deployment completed!"
+          
+          echo "⏳ Waiting for services to be ready..."
+          sleep 30
+          
+          echo "🧪 Testing deployment..."
+          curl -f http://localhost/health || echo "⚠️ Health check failed"
+          
+          echo "✅ Deployment completed!"
+          docker-compose ps
