@@ -1,5 +1,5 @@
 # For local/IP access without domain
-138.197.185.211:80 {
+89progress.com {
     # Handle API requests - proxy to backend
     handle /api/* {
         reverse_proxy backend:3000
