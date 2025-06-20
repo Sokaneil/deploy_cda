@@ -1,9 +1,8 @@
 name: Deploy to Production Server
-
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:  # Allow manual triggers
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -11,6 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        
     - name: Deploy to server
       uses: appleboy/ssh-action@v1.0.0
       with:
@@ -21,22 +25,8 @@ jobs:
         script: |
           echo "🚀 Starting deployment..."
           cd /opt/deploy_cda
-          
-          echo "📥 Pulling latest code..."
           git pull origin main
-          
-          echo "🔄 Updating submodules..."
           git submodule update --remote
-          
-          echo "🐳 Rebuilding containers..."
           docker-compose down
           docker-compose up -d --build
-          
-          echo "⏳ Waiting for services to be ready..."
-          sleep 30
-          
-          echo "🧪 Testing deployment..."
-          curl -f http://localhost/health || echo "⚠️ Health check failed"
-          
           echo "✅ Deployment completed!"
-          docker-compose ps
