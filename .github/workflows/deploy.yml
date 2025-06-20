@@ -20,7 +20,7 @@ jobs:
         port: 22
         script: |
           echo "🚀 Starting deployment..."
-          cd /opt/2024_grad_deploy
+          cd /opt/deploy_cda
           
           echo "📥 Pulling latest code..."
           git pull origin main
